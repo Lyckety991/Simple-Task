@@ -9,9 +9,13 @@ import SwiftUI
 
 @main
 struct Simple_TaskApp: App {
+    @StateObject private var taskViewModel = TaskViewModel(manager: TaskDataModel())
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(taskViewModel)
+                .environment(\.managedObjectContext, taskViewModel.manager.persistentContainer.viewContext)
         }
     }
 }

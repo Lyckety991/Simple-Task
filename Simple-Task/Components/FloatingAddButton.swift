@@ -8,11 +8,25 @@
 import SwiftUI
 
 struct FloatingAddButton: View {
+    @Binding var isShowingAddTaskSheet: Bool
+
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        Button {
+            isShowingAddTaskSheet.toggle()
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 24))
+                .foregroundColor(.white)
+                .frame(width: 60, height: 60)
+                .background(Color.blue)
+                .clipShape(Circle())
+                .shadow(radius: 5)
+        }
     }
 }
 
+// Vorschau mit Binding-Wert
 #Preview {
-    FloatingAddButton()
+    FloatingAddButton(isShowingAddTaskSheet: .constant(false))
 }
+
