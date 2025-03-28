@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// Enum zur Kategorisierung von Aufgaben.
+/// Wird für Filterung, Anzeige und Symbolzuweisung verwendet.
 enum TaskCategory: String, CaseIterable, Identifiable {
     case privat = "Privat"
     case arbeit = "Arbeit"
@@ -16,25 +18,28 @@ enum TaskCategory: String, CaseIterable, Identifiable {
         case .sonstiges: return "tag"
         }
     }
-    
+
     var color: Color {
-           switch self {
-           case .privat: return .blue
-           case .arbeit: return .green
-           case .wichtig: return .red
-           case .sonstiges: return .gray
-           }
-       }
+        switch self {
+        case .privat: return .blue
+        case .arbeit: return .green
+        case .wichtig: return .red
+        case .sonstiges: return .gray
+        }
+    }
 }
 
+/// Hauptansicht zur Anzeige aller Aufgaben.
+/// Unterstützt Filterung nach Kategorie und adaptive Darstellung.
 struct ContentView: View {
     @EnvironmentObject var taskViewModel: TaskViewModel
     @State private var isShowingSheet = false
     @State private var selectedCategoryFilter: TaskCategory? = nil
     @State private var selectedTask: PrivateTask?
-    
+
     @Environment(\.horizontalSizeClass) var sizeClass
 
+    /// Filtert Aufgaben basierend auf ausgewählter Kategorie.
     var filteredTasks: [PrivateTask] {
         if let selectedCategory = selectedCategoryFilter {
             return taskViewModel.task.filter { $0.taskCategory == selectedCategory }
@@ -46,17 +51,19 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             GeometryReader { geometry in
-                VStack {
+                VStack(spacing: 0) {
+                    // Kategorie-Filter oben
                     Picker("Kategorie", selection: $selectedCategoryFilter) {
                         Text("Alle").tag(TaskCategory?.none)
                         ForEach(TaskCategory.allCases) { category in
-                            Label(category.rawValue, systemImage: category.symbol).tag(TaskCategory?.some(category))
+                            Label(category.rawValue, systemImage: category.symbol)
+                                .tag(TaskCategory?.some(category))
                         }
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
-                    
 
+                    // Aufgabenliste
                     ScrollView {
                         LazyVGrid(columns: adaptiveGridColumns(for: geometry.size.width), spacing: 16) {
                             ForEach(filteredTasks, id: \.id) { task in
@@ -74,6 +81,7 @@ struct ContentView: View {
                     }
                     .navigationTitle("Deine Notizen")
 
+                    // Floating Add-Button
                     HStack {
                         Spacer()
                         FloatingAddButton(isShowingAddTaskSheet: $isShowingSheet)
@@ -88,19 +96,11 @@ struct ContentView: View {
         .onAppear {
             taskViewModel.loadData()
 
-            // Kleiner Delay, damit Aufgaben geladen sind
+            // Widget mit aktuellen Aufgaben aktualisieren (z. B. nach App-Start)
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                if let nextTask = taskViewModel.task.sorted(by: {
-                    ($0.date ?? .distantFuture) < ($1.date ?? .distantFuture)
-                }).first {
-                    TaskStorageHelper.saveTasksToWidget(taskViewModel.task)
-
-                } else {
-                    print("⚠️ Keine Aufgaben gefunden zum Speichern")
-                }
+                TaskStorageHelper.saveTasksToWidget(taskViewModel.task)
             }
         }
-
         .sheet(isPresented: $isShowingSheet) {
             AddTaskSheet(viewModel: taskViewModel, isShowingSheet: $isShowingSheet)
         }
@@ -111,6 +111,7 @@ struct ContentView: View {
         }
     }
 
+    /// Ermittelt die Spaltenanzahl basierend auf Bildschirmbreite.
     private func adaptiveGridColumns(for width: CGFloat) -> [GridItem] {
         if width < 600 {
             return [GridItem(.flexible())]
@@ -119,6 +120,7 @@ struct ContentView: View {
         }
     }
 }
+
 
 #Preview {
     let dataModel = TaskDataModel.preview

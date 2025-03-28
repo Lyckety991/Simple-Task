@@ -8,21 +8,25 @@
 import Foundation
 import CoreData
 
+
+/// CoreData-Verwaltungsklasse für Aufgaben.
+/// Bietet zentrale Zugriffsmöglichkeiten auf den Persistent Container,
+/// inklusive Speicherung, Laden und einem Preview-Modus für SwiftUI.
 class TaskDataModel {
     
-    /// Singleton-Instanz für den globalen Zugriff
+    /// Singleton-Instanz für globalen Zugriff innerhalb der App.
     static let shared = TaskDataModel()
     
-    /// Der Core Data Persistent Container.
+    /// Der zentrale CoreData-Persistent Container.
     let persistentContainer: NSPersistentContainer
     
-    /// Der Hauptkontext für die Arbeit mit Core Data im UI-Thread.
+    /// Der Hauptkontext für UI-nahe Operationen.
     var viewContext: NSManagedObjectContext {
         persistentContainer.viewContext
     }
     
-    /// Initialisiert den Core Data Stack.
-    /// - Parameter inMemory: Wenn `true`, wird ein flüchtiger Speicher verwendet (z. B. für Previews).
+    /// Initialisiert den CoreData-Stack mit optionalem In-Memory-Modus (z. B. für Previews).
+    /// - Parameter inMemory: Falls `true`, wird der Speicher nicht persistent geschrieben.
     init(inMemory: Bool = false) {
         persistentContainer = NSPersistentContainer(name: "Task")
         
@@ -30,18 +34,19 @@ class TaskDataModel {
             persistentContainer.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
         }
         
-        // Persistent Store nur einmal laden
+        // Persistent Store laden
         persistentContainer.loadPersistentStores { description, error in
             if let error = error as NSError? {
                 fatalError("Unresolved error \(error), \(error.userInfo)")
             }
         }
-        
+        /// Speichert Änderungen im Hauptkontext, falls vorhanden.
         persistentContainer.viewContext.automaticallyMergesChangesFromParent = true
     }
     
     
-    /// Speichert Änderungen im Hauptkontext, falls vorhanden.
+        /// Lädt CoreData persistent stores asynchron.
+        /// Gibt `true` zurück, wenn die Stores erfolgreich geladen wurden.
        func saveContext() {
            let context = viewContext
            if context.hasChanges {
@@ -53,7 +58,8 @@ class TaskDataModel {
            }
        }
     
-    // Preview Provider
+    /// Preview-Modus für SwiftUI-Vorschauen mit Dummy-Daten.
+    // Preview Provider mit Beispieldaten
     static var preview: TaskDataModel = {
         let manager = TaskDataModel(inMemory: true)
         let context = manager.viewContext
@@ -76,6 +82,13 @@ class TaskDataModel {
 
         return manager
     }()
+
+    /// Leere InMemory-Instanz für Unit-Tests ohne Beispieldaten.
+    static var emptyPreview: TaskDataModel = {
+        TaskDataModel(inMemory: true)
+    }()
+
+
     
     func loadCoreData(completion: @escaping (Bool) -> Void) {
         // Prüfen, ob die Stores bereits geladen sind, bevor erneut versucht wird, sie zu laden
@@ -95,4 +108,10 @@ class TaskDataModel {
             }
         }
     }
+    
+    /// InMemory-Instanz für Tests – ohne Beispiel-Daten.
+    static let testInstance: TaskDataModel = {
+        TaskDataModel(inMemory: true)
+    }()
+
 }

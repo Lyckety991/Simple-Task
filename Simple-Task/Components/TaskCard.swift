@@ -1,5 +1,8 @@
 import SwiftUI
 
+/// Visuelle Darstellung einer einzelnen Aufgabe.
+/// Zeigt Titel, Beschreibung, Datum und Kategorie.
+/// Enthält Farbakzent und Löschfunktion mit Bestätigung.
 struct TaskCard: View {
     let task: PrivateTask
     var onDelete: (PrivateTask) -> Void
@@ -7,15 +10,15 @@ struct TaskCard: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // Farbstreifen links, passend zur Kategorie
+            // Farbstreifen links – passend zur Kategorie
             Rectangle()
                 .fill(task.taskCategory.color)
                 .frame(width: 6)
                 .cornerRadius(3, corners: [.topRight, .bottomRight])
 
-            VStack(alignment: .leading, spacing: 5) {
-                // Titel & Löschen-Button
-                HStack {
+            VStack(alignment: .leading, spacing: 8) {
+                // Titel und Löschen-Button
+                HStack(alignment: .top) {
                     Text(task.title ?? "Kein Titel")
                         .font(.headline)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -33,20 +36,21 @@ struct TaskCard: View {
                             primaryButton: .destructive(Text("Löschen")) {
                                 onDelete(task)
                             },
-                            secondaryButton: .cancel(Text("Abbruch"))
+                            secondaryButton: .cancel(Text("Abbrechen"))
                         )
                     }
                 }
 
-                // Beschreibung (falls vorhanden)
-                if let desc = task.desc, !desc.isEmpty {
+                // Beschreibung anzeigen, falls vorhanden
+                if let desc = task.desc, !desc.trimmingCharacters(in: .whitespaces).isEmpty {
                     Text(desc)
                         .font(.subheadline)
                         .foregroundColor(.gray)
+                        .lineLimit(3)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                // Datum + Kategorie unten
+                // Datum & Kategorie (z. B. unten rechts)
                 HStack {
                     if let date = task.date {
                         Label(formatDate(date), systemImage: "calendar")
@@ -66,9 +70,10 @@ struct TaskCard: View {
         }
         .cornerRadius(10)
         .shadow(radius: 3)
+        .accessibilityElement(children: .combine)
     }
 
-    // Datum formatieren
+    /// Formatierter Datumstext (medium style, lokalisiert)
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -76,7 +81,7 @@ struct TaskCard: View {
     }
 }
 
-
+// Preview mit Beispielaufgabe
 #Preview {
     let task = PrivateTask(context: TaskDataModel.preview.persistentContainer.viewContext)
     task.title = "Wichtige Aufgabe"
@@ -85,4 +90,6 @@ struct TaskCard: View {
     task.category = TaskCategory.wichtig.rawValue
 
     return TaskCard(task: task) { _ in }
+        .padding()
+        .previewLayout(.sizeThatFits)
 }

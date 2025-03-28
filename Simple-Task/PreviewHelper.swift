@@ -9,17 +9,18 @@ import Foundation
 import CoreData
 import Combine
 
-/// Eine Hilfsklasse für Vorschau-Zwecke in SwiftUI
+/// Hilfsklasse zur Bereitstellung von Beispielinhalten für SwiftUI-Previews.
+/// Enthält Beispiel-Tasks, ein ViewModel mit InMemory-CoreData und ein Mock-ViewModel.
 struct PreviewHelper {
     
-    /// Beispiel-ViewModel mit InMemory Core Data Stack
+    /// Beispiel-ViewModel mit `TaskDataModel.preview` für Previews.
     static var viewModel: TaskViewModel {
         TaskViewModel(manager: TaskDataModel.preview)
     }
 
-    /// Beispiel-Aufgabe mit allen Feldern
+    /// Eine einzelne Beispiel-Aufgabe mit vollständigen Feldern.
     static var sampleTask: PrivateTask {
-        let context = TaskDataModel.preview.persistentContainer.viewContext
+        let context = TaskDataModel.preview.viewContext
         let task = PrivateTask(context: context)
         task.id = UUID()
         task.title = "Wichtige Notiz"
@@ -30,15 +31,17 @@ struct PreviewHelper {
         return task
     }
 
-    /// Mehrere Beispiel-Aufgaben (z. B. für Listen)
+    /// Eine Liste von mehreren Beispiel-Aufgaben für Listenansichten.
     static var multipleTasks: [PrivateTask] {
-        let context = TaskDataModel.preview.persistentContainer.viewContext
-        return [
-            ("Arbeit", TaskCategory.arbeit),
-            ("Privat", TaskCategory.privat),
-            ("Sonstiges", TaskCategory.sonstiges),
-            ("🔥 Wichtig!", TaskCategory.wichtig)
-        ].map { title, category in
+        let context = TaskDataModel.preview.viewContext
+        let samples: [(String, TaskCategory)] = [
+            ("Arbeit", .arbeit),
+            ("Privat", .privat),
+            ("Sonstiges", .sonstiges),
+            ("🔥 Wichtig!", .wichtig)
+        ]
+
+        return samples.map { title, category in
             let task = PrivateTask(context: context)
             task.id = UUID()
             task.title = title
@@ -48,24 +51,25 @@ struct PreviewHelper {
             return task
         }
     }
-    
-    
-    
 
-    // MARK: - Mock ViewModel für Previews & Tests
+    // MARK: - Mock ViewModel für Previews & UI-Tests
+
+    /// Simuliertes ViewModel ohne echten CoreData-Zugriff.
+    /// Perfekt für SwiftUI-Previews oder schnelle UI-Tests.
     final class MockTaskViewModel: ObservableObject {
         @Published var task: [PrivateTask] = []
         @Published var isDataLoaded = true
-        @Published var errorMessage: String? = nil
+        @Published var errorMessage: String?
 
+        /// Erstellt ein Mock-ViewModel mit optional vordefinierten Aufgaben.
         init(tasks: [PrivateTask] = PreviewHelper.multipleTasks) {
             self.task = tasks
         }
 
-        func loadData() {
-            // Kein CoreData, nur lokale Tasks – optional simulieren
-        }
+        /// Kein echter Datenzugriff – simuliert nur Ladezustand.
+        func loadData() {}
 
+        /// Fügt eine neue Aufgabe hinzu – rein lokal.
         func createTask(title: String, desc: String, date: Date, category: TaskCategory) {
             let newTask = PrivateTask(context: TaskDataModel.preview.viewContext)
             newTask.id = UUID()
@@ -76,10 +80,12 @@ struct PreviewHelper {
             task.append(newTask)
         }
 
+        /// Entfernt eine Aufgabe anhand der ID – simuliert echtes Löschen.
         func deleteTask(_ taskToDelete: PrivateTask) {
             task.removeAll { $0.id == taskToDelete.id }
         }
 
+        /// Aktualisiert eine bestehende Aufgabe im lokalen Array.
         func updateTask(_ taskToUpdate: PrivateTask, title: String, desc: String, isInCalendar: Bool, date: Date) {
             guard let index = task.firstIndex(where: { $0.id == taskToUpdate.id }) else { return }
             task[index].title = title
@@ -88,14 +94,11 @@ struct PreviewHelper {
         }
 
         func fetchTask() {
-            // Optional für spätere Filter
+            // Optional: Filter, Suche, etc.
         }
 
         func saveContext() {
-            // No-op im Mock
+            // Kein Persistenzverhalten im Mock
         }
     }
-
-    
 }
-

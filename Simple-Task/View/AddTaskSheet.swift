@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct AddTaskSheet: View {
+    
+    /// Sheet-Ansicht zum Erstellen einer neuen Aufgabe.
+    /// Enthält Eingabefelder für Titel, Beschreibung, Kategorie und speichert die Aufgabe über das `TaskViewModel`.
     @ObservedObject var viewModel: TaskViewModel
     @Binding var isShowingSheet: Bool
 
@@ -19,6 +22,7 @@ struct AddTaskSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                // Eingabe für Aufgabentitel
                 Section("Deine Notiz") {
                     TextField("Deine Aufgabe...", text: $taskTitle)
                         .onAppear {
@@ -29,7 +33,7 @@ struct AddTaskSheet: View {
 
                        
                 }
-               
+                // Eingabe für Beschreibung
                 Section("Beschreibung") {
                     TextEditor(text: $desc)
                         .frame(height: 150)
@@ -42,7 +46,7 @@ struct AddTaskSheet: View {
 
                         
                 }
-                
+                // Auswahl der Kategorie via Segmented Picker
                 Section("Kategorie") {
                     Picker("Kategorie", selection: $selectedCategory) {
                         ForEach(TaskCategory.allCases) { category in
@@ -54,14 +58,19 @@ struct AddTaskSheet: View {
 
                 
               
-                   
+                    // Speichern-Button
                     Button(action: {
                         if !taskTitle.isEmpty {
                             viewModel.createTask(title: taskTitle, desc: desc, date: Date(), category: selectedCategory)
                             taskTitle = ""
                             desc = ""
-                            isShowingSheet = false
                             hideKeyboard()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                isShowingSheet = false
+                                
+                            }
+                            
+                           
                             
                             UINotificationFeedbackGenerator().notificationOccurred(.success)
                         }
@@ -93,7 +102,7 @@ struct AddTaskSheet: View {
         }
     }
 }
-
+// Preview für SwiftUI Canvas
 struct AddTaskSheet_Previews: PreviewProvider {
     static var previews: some View {
         AddTaskSheet(
@@ -103,13 +112,13 @@ struct AddTaskSheet_Previews: PreviewProvider {
     }
 }
 
-
+// Tastaturausblendung für SwiftUI
 extension View {
     func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
-
+// Erweiterung für Typ-sicheren Zugriff auf Kategorie
 extension PrivateTask {
     var taskCategory: TaskCategory {
         get { TaskCategory(rawValue: category ?? "") ?? .sonstiges }

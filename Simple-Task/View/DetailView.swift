@@ -6,16 +6,21 @@
 //
 import SwiftUI
 
+/// Detailansicht zur Bearbeitung einer bestehenden Aufgabe.
+/// Unterstützt das Ändern von Titel, Beschreibung, Datum und Kategorie.
 struct DetailView: View {
     @ObservedObject var viewModel: TaskViewModel
     let task: PrivateTask
+
     @Environment(\.dismiss) private var dismiss
 
+    // Temporäre States für die Formularfelder
     @State private var title: String
     @State private var description: String
     @State private var date: Date
     @State private var category: TaskCategory
 
+    /// Initialisiert die DetailView mit dem aktuellen Stand der Aufgabe.
     init(viewModel: TaskViewModel, task: PrivateTask) {
         self.viewModel = viewModel
         self.task = task
@@ -28,19 +33,23 @@ struct DetailView: View {
     var body: some View {
         NavigationStack {
             Form {
+                // Titel bearbeiten
                 Section(header: Text("Titel")) {
                     TextField("Notiz Titel eingeben", text: $title)
                 }
 
+                // Beschreibung bearbeiten
                 Section(header: Text("Beschreibung")) {
                     TextEditor(text: $description)
                         .frame(minHeight: 100)
                 }
 
+                // Datum bearbeiten
                 Section(header: Text("Datum")) {
                     DatePicker("Datum auswählen", selection: $date, displayedComponents: .date)
                 }
 
+                // Kategorie auswählen
                 Section(header: Text("Kategorie")) {
                     Picker("Kategorie", selection: $category) {
                         ForEach(TaskCategory.allCases) { cat in
@@ -56,6 +65,7 @@ struct DetailView: View {
                     dismiss()
                 },
                 trailing: Button("Speichern") {
+                    // Änderungen an das ViewModel übergeben
                     viewModel.updateTask(
                         task,
                         title: title,
@@ -63,7 +73,7 @@ struct DetailView: View {
                         isInCalendar: task.isInCalendar,
                         date: date
                     )
-                    task.taskCategory = category // Kategorie direkt aktualisieren
+                    task.taskCategory = category
                     viewModel.saveContext()
                     dismiss()
                 }
@@ -72,7 +82,7 @@ struct DetailView: View {
     }
 }
 
-
+// Vorschau mit Testdaten für SwiftUI Canvas
 #Preview {
     let context = TaskDataModel.preview.persistentContainer.viewContext
     let sampleTask = PrivateTask(context: context)
