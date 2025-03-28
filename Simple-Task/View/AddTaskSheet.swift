@@ -13,42 +13,55 @@ struct AddTaskSheet: View {
 
     @State private var taskTitle = ""
     @State private var desc = ""
-    @State private var selectedDate = Date()
     @FocusState private var isTextFieldFocused: Bool
+    @State private var selectedCategory: TaskCategory = .privat
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section("Deine Notiz") {
                     TextField("Deine Aufgabe...", text: $taskTitle)
-                        .focused($isTextFieldFocused)
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                isTextFieldFocused = true
+                            }
+                        }
+
                        
                 }
                
                 Section("Beschreibung") {
                     TextEditor(text: $desc)
-                        .focused($isTextFieldFocused)
                         .frame(height: 150)
                         .cornerRadius(8)
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                isTextFieldFocused = true
+                            }
+                        }
+
                         
                 }
                 
-                
-                    
-                Section("Datum & Speichern") {
-                    // Datumsauswahl
-                    DatePicker("Fälligkeitsdatum", selection: $selectedDate, displayedComponents: .date)
-                        .padding(.vertical)
+                Section("Kategorie") {
+                    Picker("Kategorie", selection: $selectedCategory) {
+                        ForEach(TaskCategory.allCases) { category in
+                            Label(category.rawValue, systemImage: category.symbol).tag(category)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
 
-                  
+                
+              
                    
-                    
                     Button(action: {
                         if !taskTitle.isEmpty {
-                            viewModel.createTask(title: taskTitle, desc: desc, date: selectedDate)
+                            viewModel.createTask(title: taskTitle, desc: desc, date: Date(), category: selectedCategory.rawValue)
                             taskTitle = ""
                             desc = ""
                             isShowingSheet = false
+                            hideKeyboard()
                             
                             UINotificationFeedbackGenerator().notificationOccurred(.success)
                         }
@@ -61,8 +74,9 @@ struct AddTaskSheet: View {
                             .foregroundColor(.white)
                             .cornerRadius(8)
                     }
+                    .disabled(taskTitle.trimmingCharacters(in: .whitespaces).isEmpty)
                     
-                }
+                
               
 
             }
@@ -93,5 +107,12 @@ struct AddTaskSheet_Previews: PreviewProvider {
 extension View {
     func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
+extension PrivateTask {
+    var taskCategory: TaskCategory {
+        get { TaskCategory(rawValue: category ?? "") ?? .sonstiges }
+        set { category = newValue.rawValue }
     }
 }

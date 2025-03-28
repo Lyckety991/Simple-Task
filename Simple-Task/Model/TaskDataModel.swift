@@ -9,12 +9,20 @@ import Foundation
 import CoreData
 
 class TaskDataModel {
+    
+    /// Singleton-Instanz für den globalen Zugriff
+    static let shared = TaskDataModel()
+    
+    /// Der Core Data Persistent Container.
     let persistentContainer: NSPersistentContainer
     
+    /// Der Hauptkontext für die Arbeit mit Core Data im UI-Thread.
     var viewContext: NSManagedObjectContext {
         persistentContainer.viewContext
     }
-
+    
+    /// Initialisiert den Core Data Stack.
+    /// - Parameter inMemory: Wenn `true`, wird ein flüchtiger Speicher verwendet (z. B. für Previews).
     init(inMemory: Bool = false) {
         persistentContainer = NSPersistentContainer(name: "Task")
         
@@ -28,15 +36,30 @@ class TaskDataModel {
                 fatalError("Unresolved error \(error), \(error.userInfo)")
             }
         }
+        
+        persistentContainer.viewContext.automaticallyMergesChangesFromParent = true
     }
+    
+    
+    /// Speichert Änderungen im Hauptkontext, falls vorhanden.
+       func saveContext() {
+           let context = viewContext
+           if context.hasChanges {
+               do {
+                   try context.save()
+               } catch {
+                   print("Fehler beim Speichern des Kontexts: \(error.localizedDescription)")
+               }
+           }
+       }
     
     // Preview Provider
     static var preview: TaskDataModel = {
-        let provider = TaskDataModel(inMemory: true)
-        let viewContext = provider.viewContext
+        let manager = TaskDataModel(inMemory: true)
+        let context = manager.viewContext
 
         for index in 1..<10 {
-            let taskItem = PrivateTask(context: viewContext)
+            let taskItem = PrivateTask(context: context)
             taskItem.id = UUID()
             taskItem.title = "Task \(index)"
             taskItem.desc = "Beschreibung für Task \(index)"
@@ -46,12 +69,12 @@ class TaskDataModel {
         }
 
         do {
-            try viewContext.save()
+            try context.save()
         } catch {
             print("Fehler beim Speichern der Preview-Daten: \(error.localizedDescription)")
         }
 
-        return provider
+        return manager
     }()
     
     func loadCoreData(completion: @escaping (Bool) -> Void) {

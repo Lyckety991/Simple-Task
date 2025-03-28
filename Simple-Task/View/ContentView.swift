@@ -1,37 +1,45 @@
-//
-//  ContentView.swift
-//  Simple-Task
-//
-//  Created by Patrick Lanham on 18.01.25.
-//
-
 import SwiftUI
 
-enum TaskFilter {
-    case all, today, past
+enum TaskCategory: String, CaseIterable, Identifiable {
+    case privat = "Privat"
+    case arbeit = "Arbeit"
+    case wichtig = "Wichtig"
+    case sonstiges = "Sonstiges"
+
+    var id: String { self.rawValue }
+
+    var symbol: String {
+        switch self {
+        case .privat: return "house"
+        case .arbeit: return "briefcase"
+        case .wichtig: return "exclamationmark.circle"
+        case .sonstiges: return "tag"
+        }
+    }
+    
+    var color: Color {
+           switch self {
+           case .privat: return .blue
+           case .arbeit: return .green
+           case .wichtig: return .red
+           case .sonstiges: return .gray
+           }
+       }
 }
-
-
 
 struct ContentView: View {
     @EnvironmentObject var taskViewModel: TaskViewModel
     @State private var isShowingSheet = false
-    @State private var selectedFilter: TaskFilter = .all
+    @State private var selectedCategoryFilter: TaskCategory? = nil
     @State private var selectedTask: PrivateTask?
-    @State private var isDetailViewPresented = false
     
-    @Environment(\.horizontalSizeClass) var sizeClass  // Adaptive Darstellung für iPad/iPhone
+    @Environment(\.horizontalSizeClass) var sizeClass
 
     var filteredTasks: [PrivateTask] {
-        let today = Calendar.current.startOfDay(for: Date())
-
-        switch selectedFilter {
-        case .all:
+        if let selectedCategory = selectedCategoryFilter {
+            return taskViewModel.task.filter { $0.taskCategory == selectedCategory }
+        } else {
             return taskViewModel.task
-        case .today:
-            return taskViewModel.task.filter { Calendar.current.isDate($0.date ?? Date(), inSameDayAs: today) }
-        case .past:
-            return taskViewModel.task.filter { ($0.date ?? Date()) < today }
         }
     }
 
@@ -39,72 +47,75 @@ struct ContentView: View {
         NavigationView {
             GeometryReader { geometry in
                 VStack {
+                    Picker("Kategorie", selection: $selectedCategoryFilter) {
+                        Text("Alle").tag(TaskCategory?.none)
+                        ForEach(TaskCategory.allCases) { category in
+                            Label(category.rawValue, systemImage: category.symbol).tag(TaskCategory?.some(category))
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding(.horizontal)
+                    
+
                     ScrollView {
                         LazyVGrid(columns: adaptiveGridColumns(for: geometry.size.width), spacing: 16) {
                             ForEach(filteredTasks, id: \.id) { task in
-                                TaskCard(task: task, onDelete: {_ in
+                                TaskCard(task: task, onDelete: { _ in
                                     taskViewModel.deleteTask(task)
                                 })
                                 .onTapGesture {
                                     selectedTask = task
-                                    isDetailViewPresented = true
                                 }
-                                .frame(maxWidth: .infinity) // Flexible Breite
+                                .frame(maxWidth: .infinity)
                             }
                         }
-                        .padding(.horizontal, sizeClass == .compact ? 16 : 40) // Mehr Abstand für große Displays
+                        .padding(.top, 15)
+                        .padding(.horizontal, sizeClass == .compact ? 16 : 40)
                     }
                     .navigationTitle("Deine Notizen")
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Menu {
-                                Button("Alle Notizen") { selectedFilter = .all }
-                                Button("Heutige Notizen") { selectedFilter = .today }
-                                Button("Vergangene Notizen") { selectedFilter = .past }
-                            } label: {
-                                Image(systemName: "line.3.horizontal.decrease.circle")
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                    }
 
-                    // Floating Button unten, angepasst für verschiedene Bildschirmgrößen
                     HStack {
                         Spacer()
                         FloatingAddButton(isShowingAddTaskSheet: $isShowingSheet)
                         Spacer()
                     }
                     .frame(height: 80)
-                    .background(Color.clear)
-                    .padding(.bottom, sizeClass == .compact ? 20 : 40) // Mehr Abstand auf großen Screens
+                    .padding(.bottom, sizeClass == .compact ? 20 : 40)
                 }
+                .padding(.top, 10)
             }
         }
         .onAppear {
             taskViewModel.loadData()
+
+            // Kleiner Delay, damit Aufgaben geladen sind
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                if let nextTask = taskViewModel.task.sorted(by: {
+                    ($0.date ?? .distantFuture) < ($1.date ?? .distantFuture)
+                }).first {
+                    TaskStorageHelper.saveTasksToWidget(taskViewModel.task)
+
+                } else {
+                    print("⚠️ Keine Aufgaben gefunden zum Speichern")
+                }
+            }
         }
+
         .sheet(isPresented: $isShowingSheet) {
             AddTaskSheet(viewModel: taskViewModel, isShowingSheet: $isShowingSheet)
         }
-        .sheet(isPresented: $isDetailViewPresented, onDismiss: {
+        .sheet(item: $selectedTask, onDismiss: {
             taskViewModel.fetchTask()
-        }) {
-            if let selectedTask = selectedTask {
-                DetailView(viewModel: taskViewModel, task: Binding(
-                    get: { selectedTask },
-                    set: { self.selectedTask = $0 }
-                ))
-                .environmentObject(taskViewModel)
-            }
+        }) { task in
+            DetailView(viewModel: taskViewModel, task: task)
         }
     }
 
-    // Dynamische Spaltenanpassung für verschiedene Bildschirmgrößen
     private func adaptiveGridColumns(for width: CGFloat) -> [GridItem] {
         if width < 600 {
-            return [GridItem(.flexible())] // Eine Spalte für iPhone
+            return [GridItem(.flexible())]
         } else {
-            return [GridItem(.flexible()), GridItem(.flexible())] // Zwei Spalten für größere Screens
+            return [GridItem(.flexible()), GridItem(.flexible())]
         }
     }
 }
@@ -116,4 +127,3 @@ struct ContentView: View {
     return ContentView()
         .environmentObject(viewModel)
 }
-

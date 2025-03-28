@@ -31,13 +31,13 @@ class TaskViewModel: ObservableObject {
         }
     }
     
-    func createTask(title: String, desc: String, date: Date) {
+    func createTask(title: String, desc: String, date: Date, category: String) {
         let newTask = PrivateTask(context: manager.persistentContainer.viewContext)
         newTask.id = UUID()
         newTask.title = title
         newTask.desc = desc
         newTask.date = date
-        newTask.isInCalendar = false
+        newTask.category = category
         saveContext()
         fetchTask() // UI aktualisieren
     }
@@ -92,14 +92,14 @@ class TaskViewModel: ObservableObject {
     }
 
     func saveContext() {
-        manager.persistentContainer.viewContext.perform {
+        let context = manager.viewContext
+        if context.hasChanges {
             do {
-                try self.manager.persistentContainer.viewContext.save()
+                try context.save()
             } catch {
-                DispatchQueue.main.async {
-                    self.errorMessage = "Error saving context: \(error.localizedDescription)"
-                }
+                errorMessage = "Fehler beim Speichern: \(error.localizedDescription)"
             }
         }
     }
+
 }
