@@ -31,15 +31,16 @@ class TaskViewModel: ObservableObject {
         }
     }
     
-    func createTask(title: String, desc: String, date: Date, category: String) {
+    func createTask(title: String, desc: String, date: Date, category: TaskCategory) {
         let newTask = PrivateTask(context: manager.persistentContainer.viewContext)
         newTask.id = UUID()
         newTask.title = title
         newTask.desc = desc
         newTask.date = date
-        newTask.category = category
+        newTask.category = category.rawValue
         saveContext()
         fetchTask() // UI aktualisieren
+        TaskStorageHelper.saveTasksToWidget(self.task)
     }
 
 
@@ -75,6 +76,8 @@ class TaskViewModel: ObservableObject {
         do {
             try context.save() // Änderungen in CoreData speichern
             fetchTask() // UI aktualisieren
+            //Updated das Widget
+            TaskStorageHelper.saveTasksToWidget(self.task)
            
         } catch {
             print("Fehler beim Löschen der Aufgabe: \(error.localizedDescription)")

@@ -57,7 +57,7 @@ struct AddTaskSheet: View {
                    
                     Button(action: {
                         if !taskTitle.isEmpty {
-                            viewModel.createTask(title: taskTitle, desc: desc, date: Date(), category: selectedCategory.rawValue)
+                            viewModel.createTask(title: taskTitle, desc: desc, date: Date(), category: selectedCategory)
                             taskTitle = ""
                             desc = ""
                             isShowingSheet = false
