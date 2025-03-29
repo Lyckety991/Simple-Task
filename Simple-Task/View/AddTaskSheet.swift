@@ -18,6 +18,7 @@ struct AddTaskSheet: View {
     @State private var desc = ""
     @FocusState private var isTextFieldFocused: Bool
     @State private var selectedCategory: TaskCategory = .privat
+    @State var selectedDate: Date
 
     var body: some View {
         NavigationStack {
@@ -46,6 +47,12 @@ struct AddTaskSheet: View {
 
                         
                 }
+                
+                
+                DatePicker("Fälligkeitsdatum", selection: $selectedDate, displayedComponents: [.date, .hourAndMinute])
+
+                
+                
                 // Auswahl der Kategorie via Segmented Picker
                 Section("Kategorie") {
                     Picker("Kategorie", selection: $selectedCategory) {
@@ -61,7 +68,7 @@ struct AddTaskSheet: View {
                     // Speichern-Button
                     Button(action: {
                         if !taskTitle.isEmpty {
-                            viewModel.createTask(title: taskTitle, desc: desc, date: Date(), category: selectedCategory)
+                            viewModel.createTask(title: taskTitle, desc: desc, date: selectedDate, category: selectedCategory)
                             taskTitle = ""
                             desc = ""
                             hideKeyboard()
@@ -107,7 +114,7 @@ struct AddTaskSheet_Previews: PreviewProvider {
     static var previews: some View {
         AddTaskSheet(
             viewModel: TaskViewModel(manager: TaskDataModel.preview),
-            isShowingSheet: .constant(true)
+            isShowingSheet: .constant(true), selectedDate: Date()
         )
     }
 }

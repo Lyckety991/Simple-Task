@@ -102,7 +102,7 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $isShowingSheet) {
-            AddTaskSheet(viewModel: taskViewModel, isShowingSheet: $isShowingSheet)
+            AddTaskSheet(viewModel: taskViewModel, isShowingSheet: $isShowingSheet, selectedDate: Date() )
         }
         .sheet(item: $selectedTask, onDismiss: {
             taskViewModel.fetchTask()

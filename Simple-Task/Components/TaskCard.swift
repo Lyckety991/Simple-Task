@@ -76,7 +76,7 @@ struct TaskCard: View {
     /// Formatierter Datumstext (medium style, lokalisiert)
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateStyle = .medium
+        formatter.dateFormat = "dd.MM.yyyy - HH:mm"
         return formatter.string(from: date)
     }
 }

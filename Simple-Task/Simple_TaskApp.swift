@@ -16,6 +16,11 @@ struct Simple_TaskApp: App {
             ContentView()
                 .environmentObject(taskViewModel)
                 .environment(\.managedObjectContext, taskViewModel.manager.persistentContainer.viewContext)
+                .onAppear() {
+                    NotificationManager.shared.requestAuthorization()
+
+                }
         }
+        
     }
 }

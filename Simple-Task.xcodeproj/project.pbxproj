@@ -63,7 +63,7 @@
 		E869349B2D96C9DF0041F6C2 /* Exceptions for "Simple-Task" folder in "SimpleTaskWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				TaskEntry.swift,
+				Helper/TaskEntry.swift,
 			);
 			target = E86934792D96C3B20041F6C2 /* SimpleTaskWidgetExtension */;
 		};

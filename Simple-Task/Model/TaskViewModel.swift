@@ -56,6 +56,11 @@ class TaskViewModel: ObservableObject {
         saveContext()
         fetchTask() 
         TaskStorageHelper.saveTasksToWidget(self.task)
+        NotificationManager.shared.scheduleNotification(
+            title: title,
+            body: "Fällig am \(formatDate(date))",
+            at: date
+        )
     }
 
     /// Holt Aufgaben aus CoreData, optional gefiltert nach Suchtext oder "done"-Status.
@@ -124,5 +129,16 @@ class TaskViewModel: ObservableObject {
             }
         }
     }
+    
+    
+    /// Formatierter Datumstext (medium style, lokalisiert)
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.yyyy - HH:mm"
+        return formatter.string(from: date)
+    }
+    
+   
+
 
 }
