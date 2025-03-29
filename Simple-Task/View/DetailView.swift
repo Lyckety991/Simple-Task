@@ -19,6 +19,7 @@ struct DetailView: View {
     @State private var description: String
     @State private var date: Date
     @State private var category: TaskCategory
+    @State private var reminderOffset: TimeInterval
 
     /// Initialisiert die DetailView mit dem aktuellen Stand der Aufgabe.
     init(viewModel: TaskViewModel, task: PrivateTask) {
@@ -28,6 +29,7 @@ struct DetailView: View {
         _description = State(initialValue: task.desc ?? "")
         _date = State(initialValue: task.date ?? Date())
         _category = State(initialValue: task.taskCategory)
+        _reminderOffset = State(initialValue: task.reminderOffset)
     }
 
     var body: some View {
@@ -47,6 +49,16 @@ struct DetailView: View {
                 // Datum bearbeiten
                 Section(header: Text("Datum")) {
                     DatePicker("Datum auswählen", selection: $date, displayedComponents: .date)
+                    Picker("Wann erinnern?", selection: $reminderOffset) {
+                           Text("Keine Erinnerung").tag(0.0)
+                           Text("Zur Fälligkeit").tag(0.1)
+                           Text("5 Minuten vorher").tag(-300.0)
+                           Text("30 Minuten vorher").tag(-1800.0)
+                           Text("1 Stunde vorher").tag(-3600.0)
+                           Text("1 Tag vorher").tag(-86400.0)
+                       }
+                       .pickerStyle(MenuPickerStyle())
+                    
                 }
 
                 // Kategorie auswählen
@@ -73,10 +85,26 @@ struct DetailView: View {
                         isInCalendar: task.isInCalendar,
                         date: date
                     )
+
+                    // Zusätzliche Änderungen direkt am Task-Objekt
                     task.taskCategory = category
+                    task.reminderOffset = reminderOffset
+
+                    // Falls Erinnerung gewünscht → Notification planen
+                    if reminderOffset != 0 {
+                        let reminderDate = date.addingTimeInterval(reminderOffset)
+                        NotificationManager.shared.scheduleNotification(
+                            title: title,
+                            body: "Fällig um \(formatDate(date))",
+                            at: reminderDate
+                        )
+                    }
+
+                    // Änderungen speichern
                     viewModel.saveContext()
                     dismiss()
                 }
+
             )
         }
     }

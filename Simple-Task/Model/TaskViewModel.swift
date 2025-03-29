@@ -7,12 +7,16 @@
 import Foundation
 import CoreData
 import UIKit
+import SwiftUI
 
 
 /// ViewModel zur Verwaltung von Aufgaben.
 /// Beinhaltet Logik für das Erstellen, Laden, Löschen und Aktualisieren von Aufgaben.
 /// Synchronisiert automatisch mit CoreData und dem Widget-System.
 class TaskViewModel: ObservableObject {
+    
+    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    
     let manager: TaskDataModel
     
     /// Enthält die aktuell geladenen Aufgaben.
@@ -53,15 +57,23 @@ class TaskViewModel: ObservableObject {
         newTask.desc = desc
         newTask.date = date
         newTask.category = category.rawValue
+
         saveContext()
-        fetchTask() 
+        fetchTask()
         TaskStorageHelper.saveTasksToWidget(self.task)
-        NotificationManager.shared.scheduleNotification(
-            title: title,
-            body: "Fällig am \(formatDate(date))",
-            at: date
-        )
+
+        // ✅ Nur Benachrichtigung planen, wenn aktiviert
+        if notificationsEnabled {
+            NotificationManager.shared.scheduleNotification(
+                title: title,
+                body: "Fällig am \(formatDate(date))",
+                at: date
+            )
+        } else {
+            print("🔕 Keine Benachrichtigung geplant – deaktiviert in Einstellungen.")
+        }
     }
+
 
     /// Holt Aufgaben aus CoreData, optional gefiltert nach Suchtext oder "done"-Status.
     func fetchTask(with searchText: String = "", isDone: Bool? = nil) {
@@ -95,6 +107,7 @@ class TaskViewModel: ObservableObject {
         let context = manager.persistentContainer.viewContext
         context.delete(task)
         UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        NotificationManager.shared.removeNotification(with: task.notificationID)
         
         do {
             try context.save()
@@ -114,6 +127,21 @@ class TaskViewModel: ObservableObject {
         task.desc = desc
         task.isInCalendar = isInCalendar
         task.date = date
+        
+        // Alte löschen
+        NotificationManager.shared.removeNotification(with: task.notificationID)
+        
+        // Neue setzen, wenn nötig
+        if task.reminderOffset != 0 {
+            let reminderDate = date.addingTimeInterval(task.reminderOffset)
+            let id = NotificationManager.shared.scheduleNotification(
+                title: title,
+                body: "Fällig um \(formatDate(date))",
+                at: reminderDate
+            )
+            task.notificationID = id
+        }
+        
         saveContext()
         fetchTask() // Daten neu laden
     }
@@ -142,3 +170,6 @@ class TaskViewModel: ObservableObject {
 
 
 }
+
+
+

@@ -19,15 +19,15 @@ class NotificationManager {
     func requestAuthorization() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
-                print("❌ Fehler bei Anfrage: \(error.localizedDescription)")
+                print("Fehler bei Anfrage: \(error.localizedDescription)")
             } else {
-                print(granted ? "✅ Benachrichtigungen erlaubt" : "🚫 Benachrichtigungen abgelehnt")
+                print(granted ? "Benachrichtigungen erlaubt" : "Benachrichtigungen abgelehnt")
             }
         }
     }
 
     /// Erstellt eine Erinnerung zu einem bestimmten Zeitpunkt
-    func scheduleNotification(title: String, body: String, at date: Date) {
+    func scheduleNotification(title: String, body: String, at date: Date) -> String {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
@@ -38,6 +38,8 @@ class NotificationManager {
             [.year, .month, .day, .hour, .minute],
             from: date
         ), repeats: false)
+        
+        let id = UUID().uuidString
 
         let request = UNNotificationRequest(
             identifier: UUID().uuidString,
@@ -47,11 +49,21 @@ class NotificationManager {
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("❌ Fehler beim Planen: \(error.localizedDescription)")
+                print("Fehler beim Planen: \(error.localizedDescription)")
             } else {
-                print("✅ Erinnerung geplant für \(date)")
+                print("Erinnerung geplant für \(date)")
             }
         }
+        return id
     }
+    
+    /// Entfernt die Benachrichtigung aus dem System & ID
+    func removeNotification(with id: String?) {
+        guard let id = id else { return }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id])
+        print("Notification entfernt: \(id)")
+    }
+    
+    
 }
 

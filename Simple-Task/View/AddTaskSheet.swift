@@ -19,6 +19,7 @@ struct AddTaskSheet: View {
     @FocusState private var isTextFieldFocused: Bool
     @State private var selectedCategory: TaskCategory = .privat
     @State var selectedDate: Date
+    @State private var reminderOffset: TimeInterval = 0
 
     var body: some View {
         NavigationStack {
@@ -48,11 +49,26 @@ struct AddTaskSheet: View {
                         
                 }
                 
+                // Bereich für das Fälligkeitsdatum und der Erinnerung
+                Section("Fälligkeit und Erinnerung") {
+                    
+                    DatePicker("Datum", selection: $selectedDate, displayedComponents: [.date, .hourAndMinute])
+                    
+                    Picker("Wann erinnern?", selection: $reminderOffset) {
+                           Text("Keine Erinnerung").tag(0.0)
+                           Text("Zur Fälligkeit").tag(0.1) // Mini-Offset für "gleichzeitig"
+                           Text("5 Minuten vorher").tag(-300.0)
+                           Text("30 Minuten vorher").tag(-1800.0)
+                           Text("1 Stunde vorher").tag(-3600.0)
+                           Text("1 Tag vorher").tag(-86400.0)
+                       }
+                       .pickerStyle(MenuPickerStyle())
+                    
+                    
+                }
                 
-                DatePicker("Fälligkeitsdatum", selection: $selectedDate, displayedComponents: [.date, .hourAndMinute])
+                
 
-                
-                
                 // Auswahl der Kategorie via Segmented Picker
                 Section("Kategorie") {
                     Picker("Kategorie", selection: $selectedCategory) {
@@ -68,9 +84,25 @@ struct AddTaskSheet: View {
                     // Speichern-Button
                     Button(action: {
                         if !taskTitle.isEmpty {
-                            viewModel.createTask(title: taskTitle, desc: desc, date: selectedDate, category: selectedCategory)
-                            taskTitle = ""
-                            desc = ""
+                            let deadline = selectedDate
+                            let reminderDate = selectedDate.addingTimeInterval(reminderOffset)
+
+                            viewModel.createTask(
+                                title: taskTitle,
+                                desc: desc,
+                                date: deadline,
+                                category: selectedCategory
+                            )
+
+                            // Nur Notification planen, wenn gewünscht
+                            if reminderOffset != 0 {
+                                NotificationManager.shared.scheduleNotification(
+                                    title: "Erinnerung: \(taskTitle)",
+                                    body: "Fällig um \(formatDate(deadline))",
+                                    at: reminderDate
+                                )
+                            }
+
                             hideKeyboard()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                                 isShowingSheet = false
@@ -104,9 +136,13 @@ struct AddTaskSheet: View {
             })
             
             
+          
+            
             
             
         }
+        
+      
     }
 }
 // Preview für SwiftUI Canvas
@@ -125,6 +161,16 @@ extension View {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
+
+extension View {
+        /// Formatierter Datumstext (medium style, lokalisiert)
+        func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.yyyy - HH:mm"
+        return formatter.string(from: date)
+    }
+}
+
 // Erweiterung für Typ-sicheren Zugriff auf Kategorie
 extension PrivateTask {
     var taskCategory: TaskCategory {

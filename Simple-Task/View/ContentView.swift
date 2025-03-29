@@ -32,10 +32,13 @@ enum TaskCategory: String, CaseIterable, Identifiable {
 /// Hauptansicht zur Anzeige aller Aufgaben.
 /// Unterstützt Filterung nach Kategorie und adaptive Darstellung.
 struct ContentView: View {
+    
+    @AppStorage("isDarkMode") private var isDarkMode = false
     @EnvironmentObject var taskViewModel: TaskViewModel
     @State private var isShowingSheet = false
     @State private var selectedCategoryFilter: TaskCategory? = nil
     @State private var selectedTask: PrivateTask?
+    @State private var isShowingSettings = false
 
     @Environment(\.horizontalSizeClass) var sizeClass
 
@@ -80,6 +83,18 @@ struct ContentView: View {
                         .padding(.horizontal, sizeClass == .compact ? 16 : 40)
                     }
                     .navigationTitle("Deine Notizen")
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button {
+                                isShowingSettings = true
+                            } label: {
+                                Image(systemName: "gearshape")
+                                    .imageScale(.large)
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        
+                    }
 
                     // Floating Add-Button
                     HStack {
@@ -95,19 +110,32 @@ struct ContentView: View {
         }
         .onAppear {
             taskViewModel.loadData()
+            NotificationManager.shared.requestAuthorization()
 
-            // Widget mit aktuellen Aufgaben aktualisieren (z. B. nach App-Start)
+            // Dark/Light Mode anwenden
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                windowScene.windows.first?.overrideUserInterfaceStyle = isDarkMode ? .dark : .light
+            }
+
+            // Widget Update nach App-Start
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                TaskStorageHelper.saveTasksToWidget(taskViewModel.task)
+                if let nextTask = taskViewModel.task.sorted(by: {
+                    ($0.date ?? .distantFuture) < ($1.date ?? .distantFuture)
+                }).first {
+                    TaskStorageHelper.saveTasksToWidget(taskViewModel.task)
+                }
             }
         }
         .sheet(isPresented: $isShowingSheet) {
-            AddTaskSheet(viewModel: taskViewModel, isShowingSheet: $isShowingSheet, selectedDate: Date() )
+            AddTaskSheet(viewModel: taskViewModel, isShowingSheet: $isShowingSheet, selectedDate: Date())
         }
         .sheet(item: $selectedTask, onDismiss: {
             taskViewModel.fetchTask()
         }) { task in
             DetailView(viewModel: taskViewModel, task: task)
+        }
+        .sheet(isPresented: $isShowingSettings) {
+            SettingsView()
         }
     }
 
