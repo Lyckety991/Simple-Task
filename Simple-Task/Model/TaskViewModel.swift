@@ -8,6 +8,7 @@ import Foundation
 import CoreData
 import UIKit
 import SwiftUI
+import Combine
 
 
 /// ViewModel zur Verwaltung von Aufgaben.
@@ -15,9 +16,11 @@ import SwiftUI
 /// Synchronisiert automatisch mit CoreData und dem Widget-System.
 class TaskViewModel: ObservableObject {
     
-    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    @Published var notificationsEnabled: Bool = UserDefaults.standard.bool(forKey: "notificationsEnabled")
     
     let manager: TaskDataModel
+    
+    private var cancellables = Set<AnyCancellable>()
     
     /// Enthält die aktuell geladenen Aufgaben.
     @Published var task: [PrivateTask] = []
@@ -30,9 +33,19 @@ class TaskViewModel: ObservableObject {
 
     init(manager: TaskDataModel) {
         self.manager = manager
+        observeSettings()
         loadData()
     }
     
+    /// Überprüft die Notifications ob True oder False
+    private func observeSettings() {
+        NotificationCenter.default
+            .publisher(for: UserDefaults.didChangeNotification)
+            .sink { [weak self] _ in
+                self?.notificationsEnabled = UserDefaults.standard.bool(forKey: "notificationsEnabled")
+            }
+            .store(in: &cancellables)
+    }
     
     /// Lädt die CoreData-Datenbank asynchron.
     /// Nach erfolgreichem Laden wird automatisch `fetchTask()` aufgerufen.
@@ -64,14 +77,14 @@ class TaskViewModel: ObservableObject {
 
         // ✅ Nur Benachrichtigung planen, wenn aktiviert
         if notificationsEnabled {
-            NotificationManager.shared.scheduleNotification(
+            let id = NotificationManager.shared.scheduleNotification(
                 title: title,
                 body: "Fällig am \(formatDate(date))",
                 at: date
             )
-        } else {
-            print("🔕 Keine Benachrichtigung geplant – deaktiviert in Einstellungen.")
+            newTask.calendarEventID = id
         }
+
     }
 
 

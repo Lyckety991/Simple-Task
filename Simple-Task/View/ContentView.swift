@@ -31,6 +31,8 @@ enum TaskCategory: String, CaseIterable, Identifiable {
 
 /// Hauptansicht zur Anzeige aller Aufgaben.
 /// Unterstützt Filterung nach Kategorie und adaptive Darstellung.
+import SwiftUI
+
 struct ContentView: View {
     
     @AppStorage("isDarkMode") private var isDarkMode = false
@@ -42,7 +44,6 @@ struct ContentView: View {
 
     @Environment(\.horizontalSizeClass) var sizeClass
 
-    /// Filtert Aufgaben basierend auf ausgewählter Kategorie.
     var filteredTasks: [PrivateTask] {
         if let selectedCategory = selectedCategoryFilter {
             return taskViewModel.task.filter { $0.taskCategory == selectedCategory }
@@ -53,8 +54,14 @@ struct ContentView: View {
 
     var body: some View {
         NavigationView {
+           
             GeometryReader { geometry in
                 VStack(spacing: 0) {
+                    
+                    NavigationLink(destination: SettingsView(), isActive: $isShowingSettings) {
+                               EmptyView()
+                           }
+                           .hidden()
                     // Kategorie-Filter oben
                     Picker("Kategorie", selection: $selectedCategoryFilter) {
                         Text("Alle").tag(TaskCategory?.none)
@@ -93,8 +100,8 @@ struct ContentView: View {
                                     .foregroundColor(.blue)
                             }
                         }
-                        
                     }
+
 
                     // Floating Add-Button
                     HStack {
@@ -112,12 +119,10 @@ struct ContentView: View {
             taskViewModel.loadData()
             NotificationManager.shared.requestAuthorization()
 
-            // Dark/Light Mode anwenden
             if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
                 windowScene.windows.first?.overrideUserInterfaceStyle = isDarkMode ? .dark : .light
             }
 
-            // Widget Update nach App-Start
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 if let nextTask = taskViewModel.task.sorted(by: {
                     ($0.date ?? .distantFuture) < ($1.date ?? .distantFuture)
@@ -134,12 +139,9 @@ struct ContentView: View {
         }) { task in
             DetailView(viewModel: taskViewModel, task: task)
         }
-        .sheet(isPresented: $isShowingSettings) {
-            SettingsView()
-        }
+        
     }
 
-    /// Ermittelt die Spaltenanzahl basierend auf Bildschirmbreite.
     private func adaptiveGridColumns(for width: CGFloat) -> [GridItem] {
         if width < 600 {
             return [GridItem(.flexible())]
@@ -149,7 +151,6 @@ struct ContentView: View {
     }
 }
 
-
 #Preview {
     let dataModel = TaskDataModel.preview
     let viewModel = TaskViewModel(manager: dataModel)
@@ -157,3 +158,4 @@ struct ContentView: View {
     return ContentView()
         .environmentObject(viewModel)
 }
+
